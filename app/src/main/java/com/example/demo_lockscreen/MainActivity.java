@@ -98,13 +98,14 @@ public class MainActivity extends AppCompatActivity {
         bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream);
         byte[] byteArray = outputStream.toByteArray();
 
-        DatabaseReference databaseRef = FirebaseDatabase.getInstance().getReference("abc");
+        Log.d("nghp", "saveDrawingToFirebase: " + byteArray);
+
         StorageReference storageRef = FirebaseStorage.getInstance().getReference();
         StorageReference drawingsRef = storageRef.child("drawings"); // Create a reference to the "drawings" folder
 
         String fileName = System.currentTimeMillis() + ".png";
-        StorageReference fileRef = drawingsRef.child(fileName);
 
+        StorageReference fileRef = drawingsRef.child(fileName);
         UploadTask uploadTask = fileRef.putBytes(byteArray);
         uploadTask.addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
             @Override
