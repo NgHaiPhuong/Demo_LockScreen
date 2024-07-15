@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "1085187006799",
+    "firebase_url": "https://demoloklok-default-rtdb.firebaseio.com",
+    "project_id": "demoloklok",
+    "storage_bucket": "demoloklok.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1085187006799:android:1f6fcfe60f69abf647e53a",
+        "android_client_info": {
+          "package_name": "com.example.demo_lockscreen"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCTes8MaUkf2kdlTGC25IlnB3ln24dXhu4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
