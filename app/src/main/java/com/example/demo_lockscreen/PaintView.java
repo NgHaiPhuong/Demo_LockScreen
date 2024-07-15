@@ -12,27 +12,23 @@ import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.firebase.Firebase;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageReference;
-import com.google.firebase.storage.UploadTask;
+import com.google.gson.Gson;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class PaintView extends View {
     private static final float TOUCH_TOLERANCE = 4;
@@ -47,10 +43,10 @@ public class PaintView extends View {
     private int i = -1, j;
     private Canvas mCanvas;
     private Intent serviceIntent;
-    private final File myFile = new File("data/data/com.example.demo_lockscreen/cache/","local.png"),
-            myFile1 = new File("data/data/com.example.demo_lockscreen/cache/","notlocal.png");
-    private final FirebaseStorage storage = FirebaseStorage.getInstance();
-    private final StorageReference storageRef = storage.getReference();
+    private final File myFile = new File("data/data/com.example.demo_lockscreen/cache/", "local.png"),
+            myFile1 = new File("data/data/com.example.demo_lockscreen/cache/", "notlocal.png");
+    private List<Paint> paints;
+    private List<Path> paths;
 
     public PaintView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
@@ -71,18 +67,40 @@ public class PaintView extends View {
         mPaint.setStrokeCap(Paint.Cap.ROUND);
         mPaint.setStrokeJoin(Paint.Join.ROUND);
         mPaint.setStrokeWidth(toPx(sizeBrush));
-        if(!myFile.exists()){
-            if(!myFile1.exists()){
-                btmView = Bitmap.createBitmap(getResources().getDisplayMetrics().widthPixels,getResources().getDisplayMetrics().heightPixels,Bitmap.Config.ARGB_8888);
-            }else{
+        if (!myFile.exists()) {
+            if (!myFile1.exists()) {
+                btmView = Bitmap.createBitmap(getResources().getDisplayMetrics().widthPixels, getResources().getDisplayMetrics().heightPixels, Bitmap.Config.ARGB_8888);
+            } else {
                 btmView = BitmapFactory.decodeFile(myFile1.getAbsolutePath()).copy(Bitmap.Config.ARGB_8888, true);
             }
-        }else{
-            btmView = BitmapFactory.decodeFile(myFile.getAbsolutePath()).copy(Bitmap.Config.ARGB_8888,true);
+        } else {
+            btmView = BitmapFactory.decodeFile(myFile.getAbsolutePath()).copy(Bitmap.Config.ARGB_8888, true);
         }
         i++;
         undo[i] = btmView.copy(btmView.getConfig(), true);
-        j = i-1;
+        j = i - 1;
+
+        paints = new ArrayList<>();
+        paths = new ArrayList<>();
+    }
+
+    public CustomViewData getCustomViewData() {
+        CustomViewData data = new CustomViewData();
+        for (Path path : paths) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                data.addPath(new PathData((java.nio.file.Path) path));
+            }
+        }
+        for (Paint paint : paints) {
+            data.addPaint(new PaintData(paint));
+        }
+        return data;
+    }
+
+    public String saveToJSON() {
+        CustomViewData data = getCustomViewData();
+        Gson gson = new Gson();
+        return gson.toJson(data);
     }
 
     public float toPx(int sizeBrush) {
@@ -95,13 +113,12 @@ public class PaintView extends View {
         mCanvas = new Canvas(btmView);//-->set bitmap
     }
 
-    protected void onDraw(Canvas canvas){
+    protected void onDraw(Canvas canvas) {
         canvas.drawBitmap(btmView, 0, 0, null);//--> draw canvasBitmap on canvas
-
     }
 
     @Override
-    public boolean onTouchEvent(MotionEvent event){
+    public boolean onTouchEvent(MotionEvent event) {
         b = true;
         float x = event.getX();
         float y = event.getY();
@@ -119,32 +136,32 @@ public class PaintView extends View {
         return true;
     }
 
-    private void touchUP(){
+    private void touchUP() {
         saveToUndo(btmView);
         mPath.reset();
     }
 
     private void saveToUndo(Bitmap btmView) {
         i++;
-        for(j = i; j < undo.length; j++ ){
+        for (j = i; j < undo.length; j++) {
             Log.d("i", String.valueOf(i));
             undo[j] = null;
         }
-        if(i >= undo.length-1){
-            i = undo.length-1;
-            for(int k = 0; k < i; k++){
-                undo[k] = undo[k+1].copy(undo[k+1].getConfig(), true);
-                undo[i] = btmView.copy(btmView.getConfig(),true);
+        if (i >= undo.length - 1) {
+            i = undo.length - 1;
+            for (int k = 0; k < i; k++) {
+                undo[k] = undo[k + 1].copy(undo[k + 1].getConfig(), true);
+                undo[i] = btmView.copy(btmView.getConfig(), true);
             }
-        }else{
+        } else {
             undo[i] = btmView.copy(btmView.getConfig(), true);
         }
-        j = i-1;
+        j = i - 1;
 
     }
 
-    public void undo(){
-        if(i > 0) {
+    public void undo() {
+        if (i > 0) {
             i--;
             btmView = undo[i].copy(undo[i].getConfig(), true);
             mCanvas = new Canvas(btmView);
@@ -153,7 +170,7 @@ public class PaintView extends View {
     }
 
     public void redo() {
-        if(i >= 0 && i <= j) {
+        if (i >= 0 && i <= j) {
             i++;
             btmView = undo[i].copy(undo[i].getConfig(), true);
             mCanvas = new Canvas(btmView);
@@ -163,7 +180,7 @@ public class PaintView extends View {
 
     private void touchStart(float x, float y) {
         mPath.moveTo(x, y);
-        mPath.lineTo(x,y);
+        mPath.lineTo(x, y);
         mX = x;
         mY = y;
         mCanvas.drawPath(mPath, mPaint);
@@ -220,20 +237,22 @@ public class PaintView extends View {
                 super.onPostExecute(unused);
 
             }
-        }.execute(null,null,null);
+        }.execute(null, null, null);
     }
 
-    public void erase(){
+    public void erase() {
         mPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
         mPaint.setStrokeWidth(toPx(sizeEraser));
     }
+
     public void pencil() {
         mPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC));
         mPaint.setStrokeWidth(toPx(sizeBrush));
     }
+
     public void clear() {
         b = true;
-        btmView = Bitmap.createBitmap(getResources().getDisplayMetrics().widthPixels,getResources().getDisplayMetrics().heightPixels,Bitmap.Config.ARGB_8888);
+        btmView = Bitmap.createBitmap(getResources().getDisplayMetrics().widthPixels, getResources().getDisplayMetrics().heightPixels, Bitmap.Config.ARGB_8888);
         mCanvas = new Canvas(btmView);
         saveToUndo(btmView);
         invalidate();
@@ -242,16 +261,16 @@ public class PaintView extends View {
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        for(int l = 0; l < undo.length-1; l++){
+        for (int l = 0; l < undo.length - 1; l++) {
             undo[l] = null;
         }
-        if(b) {
+        if (b) {
             saveBitmapToStorage(btmView);
             getContext().startService(serviceIntent);
         }
     }
 
-    public Bitmap getBitmap(){
+    public Bitmap getBitmap() {
         Bitmap bitmap = Bitmap.createBitmap(getWidth(), getHeight(), Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
         draw(canvas);

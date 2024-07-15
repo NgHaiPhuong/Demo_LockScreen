@@ -49,9 +49,13 @@ import com.google.firebase.storage.FileDownloadTask;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -70,6 +74,7 @@ public class MainActivity extends AppCompatActivity {
     Bitmap bitmap, blurredBitmap;
     File myFile1 = new File("data/data/com.example.demo_lockscreen/cache/notlocal.png");
     int x = 0;
+    private DatabaseReference databaseReference;
 
     @Override
     public void onAttachedToWindow() {
@@ -125,6 +130,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        databaseReference = FirebaseDatabase.getInstance().getReference();
+
         Intent intent = new Intent(this, LockScreenService.class);
         stopService(intent);
         startForegroundService(intent);
@@ -338,7 +345,25 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void pairBtn(View view) {
-        saveDrawingToFirebase();
+       // saveDrawingToFirebase();
+        String json = paintView.saveToJSON();
+        Map<String, Object> jsonMap = new Gson().fromJson(json, new TypeToken<HashMap<String, Object>>() {}.getType());
+
+        Log.d("nghp", "pairBtn: " + jsonMap);
+        databaseReference.child("images").child("1").setValue(jsonMap)
+                        .addOnSuccessListener(new OnSuccessListener<Void>() {
+                            @Override
+                            public void onSuccess(Void unused) {
+                                Toast.makeText(MainActivity.this, "Save Image Successful", Toast.LENGTH_SHORT).show();
+                            }
+                        }).addOnFailureListener(new OnFailureListener() {
+                            @Override
+                            public void onFailure(@NonNull Exception e) {
+                                Toast.makeText(MainActivity.this, "Fix: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            }
+                        });
+
+        Toast.makeText(MainActivity.this, "gdfg", Toast.LENGTH_SHORT).show();
 
         pairBtn.startAnimation(myAnim);
         Intent intent = new Intent(this, PairActivity.class);

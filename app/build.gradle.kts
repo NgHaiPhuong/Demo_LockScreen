@@ -33,9 +33,13 @@ android {
 }
 
 dependencies {
+    // firebase
     implementation(platform("com.google.firebase:firebase-bom:33.1.2"))
     implementation("com.google.firebase:firebase-database")
     implementation ("com.google.firebase:firebase-storage:21.0.0")
+
+    // file json
+    implementation ("com.google.code.gson:gson:2.8.8")
 
     implementation(libs.appcompat)
     implementation(libs.material)
