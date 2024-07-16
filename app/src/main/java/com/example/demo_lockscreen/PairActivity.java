@@ -77,14 +77,14 @@ public class PairActivity extends AppCompatActivity {
             cancelBtn.setText("Disconnect");
             connectBtn.setAlpha(0.5f);
         }
+        Log.d("nghp", "onCreate: " + myID);
         reference = FirebaseDatabase.getInstance().getReference(String.valueOf(myID));
 
         a = reference.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-
                 if (snapshot.hasChild("My ID") && prefs.getInt("myID", 0) == 0) {
-                    Log.d("was here", "true");
+                    Log.d("nghp", "true");
                     myID = generateRandomID();
                     reference = FirebaseDatabase.getInstance().getReference(String.valueOf(myID));
                     onCreate(savedInstanceState);
@@ -94,7 +94,7 @@ public class PairActivity extends AppCompatActivity {
                     myID = prefs.getInt("myID", 0);
                     reference.child("My ID").setValue(myID);
                     textview.setText(String.valueOf(myID));
-                    Log.d("was here", "false");
+                    Log.d("nghp", "false");
 
                 }
 

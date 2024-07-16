@@ -74,7 +74,6 @@ public class MainActivity extends AppCompatActivity {
     Bitmap bitmap, blurredBitmap;
     File myFile1 = new File("data/data/com.example.demo_lockscreen/cache/notlocal.png");
     int x = 0;
-    private DatabaseReference databaseReference;
 
     @Override
     public void onAttachedToWindow() {
@@ -97,41 +96,10 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void saveDrawingToFirebase() {
-        Bitmap bitmap = paintView.getBitmap();
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream);
-        byte[] byteArray = outputStream.toByteArray();
-
-        Log.d("nghp", "saveDrawingToFirebase: " + byteArray);
-
-        StorageReference storageRef = FirebaseStorage.getInstance().getReference();
-        StorageReference drawingsRef = storageRef.child("drawings"); // Create a reference to the "drawings" folder
-
-        String fileName = System.currentTimeMillis() + ".png";
-
-        StorageReference fileRef = drawingsRef.child(fileName);
-        UploadTask uploadTask = fileRef.putBytes(byteArray);
-        uploadTask.addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
-            @Override
-            public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
-                Toast.makeText(MainActivity.this, "Drawing saved to Firebase Storage!", Toast.LENGTH_SHORT).show();
-            }
-        }).addOnFailureListener(new OnFailureListener() {
-            @Override
-            public void onFailure(@NonNull Exception e) {
-                Log.e("Firebase", "Error uploading drawing: " + e.getMessage());
-                Toast.makeText(MainActivity.this, "Error saving drawing to Firebase Storage: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
     @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        databaseReference = FirebaseDatabase.getInstance().getReference();
-
         Intent intent = new Intent(this, LockScreenService.class);
         stopService(intent);
         startForegroundService(intent);
@@ -154,8 +122,6 @@ public class MainActivity extends AppCompatActivity {
         mask = findViewById(R.id.mask);
 
         pencilColor = getDrawable(R.drawable.ic_pencil);
-
-        FirebaseApp.initializeApp(this);
 
         strokeSize.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
@@ -205,6 +171,9 @@ public class MainActivity extends AppCompatActivity {
                 SharedPreferences prefs1 = getSharedPreferences("PAIR", MODE_PRIVATE);
                 if (prefs1.getInt("FRIEND", 0) > 0) {
                     StorageReference ref = FirebaseStorage.getInstance().getReference(prefs1.getInt("FRIEND", 0) + ".png");
+
+                    paintView.url = prefs1.getInt("FRIEND", 0) + ".png";
+
                     ref.getFile(Uri.fromFile(myFile1)).addOnSuccessListener(new OnSuccessListener<FileDownloadTask.TaskSnapshot>() {
                         @Override
                         public void onSuccess(FileDownloadTask.TaskSnapshot taskSnapshot) {
@@ -213,7 +182,6 @@ public class MainActivity extends AppCompatActivity {
                             finish();
                         }
                     });
-
                 }
             }
         }
@@ -345,26 +313,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void pairBtn(View view) {
-       // saveDrawingToFirebase();
-        String json = paintView.saveToJSON();
-        Map<String, Object> jsonMap = new Gson().fromJson(json, new TypeToken<HashMap<String, Object>>() {}.getType());
-
-        Log.d("nghp", "pairBtn: " + jsonMap);
-        databaseReference.child("images").child("1").setValue(jsonMap)
-                        .addOnSuccessListener(new OnSuccessListener<Void>() {
-                            @Override
-                            public void onSuccess(Void unused) {
-                                Toast.makeText(MainActivity.this, "Save Image Successful", Toast.LENGTH_SHORT).show();
-                            }
-                        }).addOnFailureListener(new OnFailureListener() {
-                            @Override
-                            public void onFailure(@NonNull Exception e) {
-                                Toast.makeText(MainActivity.this, "Fix: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                            }
-                        });
-
-        Toast.makeText(MainActivity.this, "gdfg", Toast.LENGTH_SHORT).show();
-
         pairBtn.startAnimation(myAnim);
         Intent intent = new Intent(this, PairActivity.class);
         startActivity(intent);
@@ -406,7 +354,6 @@ public class MainActivity extends AppCompatActivity {
     public void setBackgroundImage() {
         final WallpaperManager wallpaperManager = WallpaperManager.getInstance(getApplicationContext());
 
-
         ParcelFileDescriptor pfd = null;
         int permissionCheck = ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_EXTERNAL_STORAGE);
 
@@ -414,7 +361,7 @@ public class MainActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, REQUEST_READ_EXTERNAL_STORAGE);
         } else {
             if (wallpaperManager.getWallpaperFile(WallpaperManager.FLAG_LOCK) == null && wallpaperManager.getWallpaperFile(WallpaperManager.FLAG_SYSTEM) == null) {
-                @SuppressLint("UseCompatLoadingForDrawables") Drawable drawable = getDrawable(R.drawable.wallpaper);
+                Drawable drawable = getDrawable(R.drawable.wallpaper);
                 bgWallpaper.setImageDrawable(drawable);
             } else if (wallpaperManager.getWallpaperFile(WallpaperManager.FLAG_LOCK) == null) {
                 pfd = wallpaperManager.getWallpaperFile(WallpaperManager.FLAG_SYSTEM);
