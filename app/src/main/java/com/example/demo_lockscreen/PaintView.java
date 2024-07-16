@@ -18,9 +18,15 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.storage.FileDownloadTask;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.gson.Gson;
@@ -36,6 +42,7 @@ import java.util.List;
 public class PaintView extends View {
     private static final float TOUCH_TOLERANCE = 4;
     public static Bitmap btmView;
+    public static Bitmap saveBipmap;
     public Bitmap[] undo = new Bitmap[10];
     public Paint mPaint = new Paint();
     private final Path mPath = new Path();
@@ -57,11 +64,10 @@ public class PaintView extends View {
         init();
 
     }
+
     public String url = "";
 
     private void init() {
-        StorageReference getImage = FirebaseStorage.getInstance().getReference(url).child("f");
-
         serviceIntent = new Intent(getContext(), UploadService.class);
         getContext().startService(serviceIntent);
         sizeEraser = 6;
@@ -73,41 +79,49 @@ public class PaintView extends View {
         mPaint.setStrokeCap(Paint.Cap.ROUND);
         mPaint.setStrokeJoin(Paint.Join.ROUND);
         mPaint.setStrokeWidth(toPx(sizeBrush));
+
+        StorageReference storageRef = FirebaseStorage.getInstance().getReference("74686621.png");
+
+        try {
+            File localFile = File.createTempFile("myImage", "png");
+            storageRef.getFile(localFile).addOnSuccessListener(new OnSuccessListener<FileDownloadTask.TaskSnapshot>() {
+                @Override
+                public void onSuccess(FileDownloadTask.TaskSnapshot taskSnapshot) {
+                    Bitmap bitmap = BitmapFactory.decodeFile(localFile.getAbsolutePath());
+
+                    if (bitmap != null) {
+                        saveBipmap = bitmap.copy(Bitmap.Config.ARGB_8888, true);
+                    } else {
+                        Log.d("nghp", "onSuccess: Failed to decode bitmap");
+                    }
+                }
+            }).addOnFailureListener(new OnFailureListener() {
+                @Override
+                public void onFailure(@NonNull Exception e) {
+                    Log.d("nghp", "onFailure: Failed to download image");
+                }
+            });
+        } catch (IOException e) {
+            Log.d("nghp", "init: " + e.getMessage());
+            throw new RuntimeException(e);
+        }
+
         if (!myFile.exists()) {
             if (!myFile1.exists()) {
                 btmView = Bitmap.createBitmap(getResources().getDisplayMetrics().widthPixels, getResources().getDisplayMetrics().heightPixels, Bitmap.Config.ARGB_8888);
             } else {
-                btmView = BitmapFactory.decodeFile(myFile1.getAbsolutePath()).copy(Bitmap.Config.ARGB_8888, true);
+                btmView = saveBipmap;
+                // btmView = BitmapFactory.decodeFile(myFile1.getAbsolutePath()).copy(Bitmap.Config.ARGB_8888, true);
             }
         } else {
-            btmView = BitmapFactory.decodeFile(myFile.getAbsolutePath()).copy(Bitmap.Config.ARGB_8888, true);
+            btmView = saveBipmap;
+            // btmView = BitmapFactory.decodeFile(myFile.getAbsolutePath()).copy(Bitmap.Config.ARGB_8888, true);
         }
         i++;
         undo[i] = btmView.copy(btmView.getConfig(), true);
         j = i - 1;
 
         paints.add(mPaint);
-    }
-
-    public CustomViewData getCustomViewData() {
-        paints.add(mPaint);
-        // paths.add((Path) paths);
-        CustomViewData data = new CustomViewData();
-        /*for (Path path : paths) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                data.addPath(new PathData((java.nio.file.Path) path));
-            }
-        }*/
-        for (Paint paint : paints) {
-            data.addPaint(new PaintData(paint));
-        }
-        return data;
-    }
-
-    public String saveToJSON() {
-        CustomViewData data = getCustomViewData();
-        Gson gson = new Gson();
-        return gson.toJson(data);
     }
 
     public float toPx(int sizeBrush) {

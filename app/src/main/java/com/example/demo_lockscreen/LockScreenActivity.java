@@ -38,7 +38,6 @@ import com.google.firebase.storage.StorageReference;
 import java.io.File;
 
 public class LockScreenActivity extends AppCompatActivity {
-
     private static final int REQUEST_READ_EXTERNAL_STORAGE = 1;
     SharedPreferences prefs, prefs1;
     static String loc;
