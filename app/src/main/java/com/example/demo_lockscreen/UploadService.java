@@ -41,7 +41,7 @@ public class UploadService extends Service {
         int FRIEND = prefs1.getInt("FRIEND", 0);
         if(FRIEND != 0){
             loc = String.valueOf(FRIEND);
-            myRef = FirebaseStorage.getInstance().getReference(loc + ".png");
+            myRef = FirebaseStorage.getInstance().getReference().child(loc + ".png");
             new AsyncTask<Void, String, Void>() {
 
                 @Override

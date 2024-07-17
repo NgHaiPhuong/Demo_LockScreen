@@ -14,12 +14,15 @@
         android:layout_height="match_parent">
 
         <!--a sample image view for the preview purpose-->
+
         <ImageView
             android:id="@+id/wallpaper_image"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:contentDescription="Wallpaper"
-            android:scaleType="centerCrop" />
+            android:scaleType="centerCrop"
+            tools:layout_editor_absoluteX="0dp"
+            tools:layout_editor_absoluteY="0dp" />
 
         <com.example.demo_lockscreen.PaintView
             android:id="@+id/paintView"
@@ -90,8 +93,8 @@
             android:layout_height="40dp"
             android:layout_marginTop="44dp"
             android:layout_marginEnd="28dp"
-            android:onClick="pairBtn"
             android:background="@drawable/ic_pair"
+            android:onClick="pairBtn"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -151,6 +154,28 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintVertical_bias="0.38" />
 
+        <Button
+            android:id="@+id/btnrefresh"
+            android:layout_width="55dp"
+            android:layout_height="55dp"
+            android:background= "@drawable/ic_refresh"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.936"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0.412" />
+
+        <Button
+            android:id="@+id/btnsave"
+            android:layout_width="55dp"
+            android:layout_height="55dp"
+            android:background="@drawable/ic_save"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.938"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 </LinearLayout>

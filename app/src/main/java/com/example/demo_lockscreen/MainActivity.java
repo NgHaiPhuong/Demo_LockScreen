@@ -13,6 +13,7 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
@@ -29,34 +30,27 @@ import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.firebase.Firebase;
-import com.google.firebase.FirebaseApp;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.storage.FileDownloadTask;
 import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.OnProgressListener;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+
+import kotlinx.coroutines.CoroutineScope;
+import kotlinx.coroutines.Dispatchers;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -67,13 +61,13 @@ public class MainActivity extends AppCompatActivity {
     PaintView paintView;
     int pixel = Color.BLACK;
     static boolean b = true, k = true, l = false;
-    Button pencilBtn, eraseBtn, clearBtn, hideBtn, pairBtn, undoBtn, redoBtn;
+    Button pencilBtn, eraseBtn, clearBtn, hideBtn, pairBtn, undoBtn, redoBtn, btnRefresh, btnSave;
     SeekBar strokeSize;
     Animation myAnim;
     Drawable pencilColor;
     MyBounceInterpolator interpolator;
     Bitmap bitmap, blurredBitmap;
-    File myFile1 = new File("data/data/com.example.demo_lockscreen/cache/notlocal.png");
+    File myFile = new File("data/data/com.example.demo_lockscreen/cache/", "local.png");
     int x = 0;
 
     @Override
@@ -97,6 +91,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    @SuppressLint("MissingInflatedId")
     @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -116,6 +111,8 @@ public class MainActivity extends AppCompatActivity {
         undoBtn = findViewById(R.id.undo);
         redoBtn = findViewById(R.id.redo);
         sizeFDBck = findViewById(R.id.sizeFDBck);
+        btnRefresh = findViewById(R.id.btnrefresh);
+        btnSave = findViewById(R.id.btnsave);
         eraseBtn.setAlpha(0.5f);
 
         paintView = findViewById(R.id.paintView);
@@ -166,16 +163,29 @@ public class MainActivity extends AppCompatActivity {
         interpolator = new MyBounceInterpolator(0.5, 5);
         myAnim.setInterpolator(interpolator);
 
-        if (myFile1.exists()) {
-            if (Integer.parseInt(String.valueOf(myFile1.length() / 1024)) < 1 || !myFile1.canRead()) {
-                myFile1.delete();
+        btnRefresh.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                btnRefresh.startAnimation(myAnim);
+                refreshView();
+            }
+        });
+
+        btnSave.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                btnSave.startAnimation(myAnim);
+                runOnUiThread(() -> saveImage());
+            }
+        });
+
+        if (myFile.exists()) {
+            if (Integer.parseInt(String.valueOf(myFile.length() / 1024)) < 1 || !myFile.canRead()) {
+                myFile.delete();
                 SharedPreferences prefs1 = getSharedPreferences("PAIR", MODE_PRIVATE);
                 if (prefs1.getInt("FRIEND", 0) > 0) {
                     StorageReference ref = FirebaseStorage.getInstance().getReference(prefs1.getInt("FRIEND", 0) + ".png");
-
-                    paintView.url = prefs1.getInt("FRIEND", 0) + ".png";
-
-                    ref.getFile(Uri.fromFile(myFile1)).addOnSuccessListener(new OnSuccessListener<FileDownloadTask.TaskSnapshot>() {
+                    ref.getFile(Uri.fromFile(myFile)).addOnSuccessListener(new OnSuccessListener<FileDownloadTask.TaskSnapshot>() {
                         @Override
                         public void onSuccess(FileDownloadTask.TaskSnapshot taskSnapshot) {
                             Intent intent1 = new Intent(getApplicationContext(), MainActivity.class);
@@ -185,6 +195,47 @@ public class MainActivity extends AppCompatActivity {
                     });
                 }
             }
+        }
+    }
+
+    @SuppressLint("StaticFieldLeak")
+    private void saveImage() {
+        paintView.saveBitmapToStorage();
+        String loc;
+        SharedPreferences prefs1 = getSharedPreferences("PAIR",MODE_PRIVATE   );
+        int FRIEND = prefs1.getInt("FRIEND", 0);
+        if(FRIEND != 0){
+            loc = String.valueOf(FRIEND);
+            StorageReference myRef = FirebaseStorage.getInstance().getReference().child(loc + ".png");
+            if(myFile.exists()) {
+                myRef.putFile(Uri.fromFile(myFile)).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+                    @Override
+                    public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                        Log.d("nghp", "saveImage: hahaha");
+                    }
+                }).addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.d("nghp", "saveImage: hhuuhuh" + e.getMessage());
+                    }
+                });
+            }
+        }
+    }
+
+    public void refreshView() {
+        SharedPreferences prefs1 = getSharedPreferences("PAIR", MODE_PRIVATE);
+        if (prefs1.getInt("FRIEND", 0) > 0) {
+            StorageReference ref = FirebaseStorage.getInstance().getReference(prefs1.getInt("FRIEND", 0) + ".png");
+            Log.d("nghp", "refreshView: " + prefs1.getInt("FRIEND" , 0));
+            ref.getFile(Uri.fromFile(myFile)).addOnSuccessListener(new OnSuccessListener<FileDownloadTask.TaskSnapshot>() {
+                @Override
+                public void onSuccess(FileDownloadTask.TaskSnapshot taskSnapshot) {
+                    Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+                    startActivity(intent);
+                    finish();
+                }
+            });
         }
     }
 
@@ -408,5 +459,4 @@ public class MainActivity extends AppCompatActivity {
             bitmap.recycle();
         }
     }
-
 }

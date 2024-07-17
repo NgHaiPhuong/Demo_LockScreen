@@ -77,7 +77,6 @@ public class PairActivity extends AppCompatActivity {
             cancelBtn.setText("Disconnect");
             connectBtn.setAlpha(0.5f);
         }
-        Log.d("nghp", "onCreate: " + myID);
         reference = FirebaseDatabase.getInstance().getReference(String.valueOf(myID));
 
         a = reference.addValueEventListener(new ValueEventListener() {
@@ -95,7 +94,6 @@ public class PairActivity extends AppCompatActivity {
                     reference.child("My ID").setValue(myID);
                     textview.setText(String.valueOf(myID));
                     Log.d("nghp", "false");
-
                 }
 
                 if (snapshot.hasChild("INBOX") && snapshot.hasChild("REQUEST")) {

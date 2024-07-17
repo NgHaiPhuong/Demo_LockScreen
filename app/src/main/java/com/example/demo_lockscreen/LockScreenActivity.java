@@ -70,7 +70,7 @@ public class LockScreenActivity extends AppCompatActivity {
     protected void onCreate(Bundle saveInstanceState) {
         super.onCreate(saveInstanceState);
         setContentView(R.layout.activity_lock_screen);
-        prefs1 = getSharedPreferences("PAIR",MODE_PRIVATE   );
+        prefs1 = getSharedPreferences("PAIR",MODE_PRIVATE);
         int FRIEND = prefs1.getInt("FRIEND", 0);
         Log.d("loc", String.valueOf(FRIEND));
         if(FRIEND != 0){

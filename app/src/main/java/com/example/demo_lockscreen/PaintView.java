@@ -22,15 +22,6 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.firebase.FirebaseApp;
-import com.google.firebase.storage.FileDownloadTask;
-import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageReference;
-import com.google.gson.Gson;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -42,7 +33,6 @@ import java.util.List;
 public class PaintView extends View {
     private static final float TOUCH_TOLERANCE = 4;
     public static Bitmap btmView;
-    public static Bitmap saveBipmap;
     public Bitmap[] undo = new Bitmap[10];
     public Paint mPaint = new Paint();
     private final Path mPath = new Path();
@@ -55,8 +45,6 @@ public class PaintView extends View {
     private Intent serviceIntent;
     private final File myFile = new File("data/data/com.example.demo_lockscreen/cache/", "local.png"),
             myFile1 = new File("data/data/com.example.demo_lockscreen/cache/", "notlocal.png");
-    private final List<Paint> paints = new ArrayList<>();
-    private final List<Path> paths = new ArrayList<>();
 
     public PaintView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
@@ -64,8 +52,6 @@ public class PaintView extends View {
         init();
 
     }
-
-    public String url = "";
 
     private void init() {
         serviceIntent = new Intent(getContext(), UploadService.class);
@@ -80,48 +66,18 @@ public class PaintView extends View {
         mPaint.setStrokeJoin(Paint.Join.ROUND);
         mPaint.setStrokeWidth(toPx(sizeBrush));
 
-        StorageReference storageRef = FirebaseStorage.getInstance().getReference("74686621.png");
-
-        try {
-            File localFile = File.createTempFile("myImage", "png");
-            storageRef.getFile(localFile).addOnSuccessListener(new OnSuccessListener<FileDownloadTask.TaskSnapshot>() {
-                @Override
-                public void onSuccess(FileDownloadTask.TaskSnapshot taskSnapshot) {
-                    Bitmap bitmap = BitmapFactory.decodeFile(localFile.getAbsolutePath());
-
-                    if (bitmap != null) {
-                        saveBipmap = bitmap.copy(Bitmap.Config.ARGB_8888, true);
-                    } else {
-                        Log.d("nghp", "onSuccess: Failed to decode bitmap");
-                    }
-                }
-            }).addOnFailureListener(new OnFailureListener() {
-                @Override
-                public void onFailure(@NonNull Exception e) {
-                    Log.d("nghp", "onFailure: Failed to download image");
-                }
-            });
-        } catch (IOException e) {
-            Log.d("nghp", "init: " + e.getMessage());
-            throw new RuntimeException(e);
-        }
-
         if (!myFile.exists()) {
             if (!myFile1.exists()) {
                 btmView = Bitmap.createBitmap(getResources().getDisplayMetrics().widthPixels, getResources().getDisplayMetrics().heightPixels, Bitmap.Config.ARGB_8888);
             } else {
-                btmView = saveBipmap;
-                // btmView = BitmapFactory.decodeFile(myFile1.getAbsolutePath()).copy(Bitmap.Config.ARGB_8888, true);
+                btmView = BitmapFactory.decodeFile(myFile1.getAbsolutePath()).copy(Bitmap.Config.ARGB_8888, true);
             }
         } else {
-            btmView = saveBipmap;
-            // btmView = BitmapFactory.decodeFile(myFile.getAbsolutePath()).copy(Bitmap.Config.ARGB_8888, true);
+            btmView = BitmapFactory.decodeFile(myFile.getAbsolutePath()).copy(Bitmap.Config.ARGB_8888, true);
         }
         i++;
         undo[i] = btmView.copy(btmView.getConfig(), true);
         j = i - 1;
-
-        paints.add(mPaint);
     }
 
     public float toPx(int sizeBrush) {
@@ -222,7 +178,7 @@ public class PaintView extends View {
     }
 
     @SuppressLint("StaticFieldLeak")
-    public void saveBitmapToStorage(Bitmap bitmap) {
+    public void saveBitmapToStorage() {
         new AsyncTask<Void, String, Void>() {
             @Override
             protected void onPreExecute() {
@@ -236,9 +192,9 @@ public class PaintView extends View {
                 FileOutputStream fos = null;
                 try {
                     fos = new FileOutputStream(myFile);
-                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
+                    btmView.compress(Bitmap.CompressFormat.PNG, 100, fos);
                     fos = new FileOutputStream(myFile1);
-                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
+                    btmView.compress(Bitmap.CompressFormat.PNG, 100, fos);
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
                 } finally {
@@ -286,15 +242,8 @@ public class PaintView extends View {
             undo[l] = null;
         }
         if (b) {
-            saveBitmapToStorage(btmView);
+            saveBitmapToStorage();
             getContext().startService(serviceIntent);
         }
-    }
-
-    public Bitmap getBitmap() {
-        Bitmap bitmap = Bitmap.createBitmap(getWidth(), getHeight(), Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(bitmap);
-        draw(canvas);
-        return bitmap;
     }
 }
