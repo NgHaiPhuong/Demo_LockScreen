@@ -8,6 +8,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -16,6 +17,8 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.ParcelFileDescriptor;
 import android.provider.Settings;
 import android.util.Log;
@@ -44,6 +47,7 @@ import com.google.firebase.storage.OnProgressListener;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -53,7 +57,6 @@ import kotlinx.coroutines.CoroutineScope;
 import kotlinx.coroutines.Dispatchers;
 
 public class MainActivity extends AppCompatActivity {
-
     private static final int REQUEST_READ_EXTERNAL_STORAGE = 1;
     private static final int ACTION_MANAGE_OVERLAY_PERMISSION_REQUEST_CODE = 2;
     ImageView bgWallpaper, hsv, mask;
@@ -91,7 +94,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    @SuppressLint("MissingInflatedId")
+    @SuppressLint({"MissingInflatedId", "ClickableViewAccessibility"})
     @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -163,6 +166,26 @@ public class MainActivity extends AppCompatActivity {
         interpolator = new MyBounceInterpolator(0.5, 5);
         myAnim.setInterpolator(interpolator);
 
+        mask.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                switch (event.getActionMasked()){
+                    case MotionEvent.ACTION_DOWN:
+                        mask.setVisibility(View.INVISIBLE);
+                        b = true;
+                        l = false;
+                        strokeSize.setVisibility(View.INVISIBLE);
+                        hsv.setVisibility(View.INVISIBLE);
+                        clearBtn.setVisibility(View.VISIBLE);
+                        break;
+                    case MotionEvent.ACTION_UP:
+                        paintView.saveBitmapToStorage();
+                        break;
+                }
+                return true;
+            }
+        });
+
         btnRefresh.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -175,6 +198,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 btnSave.startAnimation(myAnim);
+                //runOnUiThread(() -> saveImage());
                 runOnUiThread(() -> saveImage());
             }
         });
@@ -198,28 +222,33 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+
     @SuppressLint("StaticFieldLeak")
     private void saveImage() {
         paintView.saveBitmapToStorage();
         String loc;
-        SharedPreferences prefs1 = getSharedPreferences("PAIR",MODE_PRIVATE   );
+        Log.d("nghp", "saveImage:gedagag");
+        SharedPreferences prefs1 = getSharedPreferences("PAIR", MODE_PRIVATE);
         int FRIEND = prefs1.getInt("FRIEND", 0);
-        if(FRIEND != 0){
+        if (FRIEND != 0) {
+            Log.d("nghp", "saveImage:friend");
             loc = String.valueOf(FRIEND);
             StorageReference myRef = FirebaseStorage.getInstance().getReference().child(loc + ".png");
-            if(myFile.exists()) {
+            if (myFile.exists()) {
+                Log.d("nghp", "saveImage: ");
                 myRef.putFile(Uri.fromFile(myFile)).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
                     @Override
                     public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
-                        Log.d("nghp", "saveImage: hahaha");
+                        Toast.makeText(MainActivity.this, "Successfuly", Toast.LENGTH_SHORT).show();
                     }
                 }).addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
-                        Log.d("nghp", "saveImage: hhuuhuh" + e.getMessage());
+                        Toast.makeText(MainActivity.this, "Fail", Toast.LENGTH_SHORT).show();
                     }
                 });
             }
+            else Log.d("nghp", "saveImage: fgagadg");
         }
     }
 
@@ -227,7 +256,7 @@ public class MainActivity extends AppCompatActivity {
         SharedPreferences prefs1 = getSharedPreferences("PAIR", MODE_PRIVATE);
         if (prefs1.getInt("FRIEND", 0) > 0) {
             StorageReference ref = FirebaseStorage.getInstance().getReference(prefs1.getInt("FRIEND", 0) + ".png");
-            Log.d("nghp", "refreshView: " + prefs1.getInt("FRIEND" , 0));
+            Log.d("nghp", "refreshView: " + prefs1.getInt("FRIEND", 0));
             ref.getFile(Uri.fromFile(myFile)).addOnSuccessListener(new OnSuccessListener<FileDownloadTask.TaskSnapshot>() {
                 @Override
                 public void onSuccess(FileDownloadTask.TaskSnapshot taskSnapshot) {
@@ -370,15 +399,6 @@ public class MainActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
-    public void onTouch(View view) {
-        mask.setVisibility(View.INVISIBLE);
-        b = true;
-        l = false;
-        strokeSize.setVisibility(View.INVISIBLE);
-        hsv.setVisibility(View.INVISIBLE);
-        clearBtn.setVisibility(View.VISIBLE);
-    }
-
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -413,7 +433,7 @@ public class MainActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, REQUEST_READ_EXTERNAL_STORAGE);
         } else {
             if (wallpaperManager.getWallpaperFile(WallpaperManager.FLAG_LOCK) == null && wallpaperManager.getWallpaperFile(WallpaperManager.FLAG_SYSTEM) == null) {
-                Drawable drawable = getDrawable(R.drawable.wallpaper);
+                Drawable drawable = getDrawable(R.drawable.refresh);
                 bgWallpaper.setImageDrawable(drawable);
             } else if (wallpaperManager.getWallpaperFile(WallpaperManager.FLAG_LOCK) == null) {
                 pfd = wallpaperManager.getWallpaperFile(WallpaperManager.FLAG_SYSTEM);
@@ -458,5 +478,14 @@ public class MainActivity extends AppCompatActivity {
         if (bitmap != null) {
             bitmap.recycle();
         }
+    }
+
+    public void onTouch(View view) {
+        mask.setVisibility(View.INVISIBLE);
+        b = true;
+        l = false;
+        strokeSize.setVisibility(View.INVISIBLE);
+        hsv.setVisibility(View.INVISIBLE);
+        clearBtn.setVisibility(View.VISIBLE);
     }
 }

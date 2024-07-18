@@ -41,6 +41,8 @@ dependencies {
     // file json
     implementation ("com.google.code.gson:gson:2.8.8")
 
+    implementation ("org.jetbrains.kotlin:kotlin-script-runtime:1.5.30")
+
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.activity)

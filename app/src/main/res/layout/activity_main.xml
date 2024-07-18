@@ -35,8 +35,8 @@
             android:id="@+id/mask"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:onClick="onTouch"
             android:visibility="invisible"
+            android:onClick="onTouch"
             tools:layout_editor_absoluteX="0dp"
             tools:layout_editor_absoluteY="0dp" />
 

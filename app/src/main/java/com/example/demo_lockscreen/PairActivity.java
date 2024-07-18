@@ -54,7 +54,7 @@ public class PairActivity extends AppCompatActivity {
         cancelBtn = findViewById(R.id.cancel_button);
 
         prefs = getSharedPreferences("PAIR", MODE_PRIVATE);
-        editor = prefs.edit();
+        editor = prefs.edit(); // cho phép sửa đổi
         myID = prefs.getInt("myID", 0);
         if (myID == 0) {
             textview.setText("...");

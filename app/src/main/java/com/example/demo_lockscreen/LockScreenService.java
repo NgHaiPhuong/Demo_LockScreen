@@ -28,6 +28,7 @@ public class LockScreenService extends Service {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             createNotificationChannel();
         }
+
         IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_OFF);
         mReceiver = new Receiver();
         registerReceiver(mReceiver, filter);

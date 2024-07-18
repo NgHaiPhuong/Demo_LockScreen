@@ -210,7 +210,7 @@ public class LockScreenActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, REQUEST_READ_EXTERNAL_STORAGE);
         } else {
             if(wallpaperManager.getWallpaperFile(WallpaperManager.FLAG_LOCK) == null && wallpaperManager.getWallpaperFile(WallpaperManager.FLAG_SYSTEM) == null){
-                imageView.setImageDrawable(getResources().getDrawable(R.drawable.wallpaper));
+                imageView.setImageDrawable(getResources().getDrawable(R.drawable.refresh));
             }else if(wallpaperManager.getWallpaperFile(WallpaperManager.FLAG_LOCK) == null){
                 pfd = wallpaperManager.getWallpaperFile(WallpaperManager.FLAG_SYSTEM);
                 bgBitmap = BitmapFactory.decodeFileDescriptor(pfd.getFileDescriptor());

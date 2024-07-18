@@ -45,6 +45,8 @@ public class PaintView extends View {
     private Intent serviceIntent;
     private final File myFile = new File("data/data/com.example.demo_lockscreen/cache/", "local.png"),
             myFile1 = new File("data/data/com.example.demo_lockscreen/cache/", "notlocal.png");
+    public final List<Paint> lstPaint = new ArrayList<>();
+    public final List<Path> lstPath = new ArrayList<>();
 
     public PaintView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
@@ -66,13 +68,18 @@ public class PaintView extends View {
         mPaint.setStrokeJoin(Paint.Join.ROUND);
         mPaint.setStrokeWidth(toPx(sizeBrush));
 
+        lstPaint.add(mPaint);
+
         if (!myFile.exists()) {
             if (!myFile1.exists()) {
+                Log.d("nghp", "init: 1");
                 btmView = Bitmap.createBitmap(getResources().getDisplayMetrics().widthPixels, getResources().getDisplayMetrics().heightPixels, Bitmap.Config.ARGB_8888);
             } else {
+                Log.d("nghp", "init: 2");
                 btmView = BitmapFactory.decodeFile(myFile1.getAbsolutePath()).copy(Bitmap.Config.ARGB_8888, true);
             }
         } else {
+            Log.d("nghp", "init: 3");
             btmView = BitmapFactory.decodeFile(myFile.getAbsolutePath()).copy(Bitmap.Config.ARGB_8888, true);
         }
         i++;
@@ -105,7 +112,6 @@ public class PaintView extends View {
                 break;
             case MotionEvent.ACTION_MOVE:
                 touchMove(x, y);
-
                 break;
             case MotionEvent.ACTION_UP:
                 touchUP();
@@ -160,6 +166,7 @@ public class PaintView extends View {
         mPath.lineTo(x, y);
         mX = x;
         mY = y;
+        lstPath.add(mPath);
         mCanvas.drawPath(mPath, mPaint);
         invalidate();
     }
@@ -192,8 +199,6 @@ public class PaintView extends View {
                 FileOutputStream fos = null;
                 try {
                     fos = new FileOutputStream(myFile);
-                    btmView.compress(Bitmap.CompressFormat.PNG, 100, fos);
-                    fos = new FileOutputStream(myFile1);
                     btmView.compress(Bitmap.CompressFormat.PNG, 100, fos);
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
